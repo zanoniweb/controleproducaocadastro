@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CADASTRO ÚNICO - CRAS ANA ROSA</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #2c3e50; 
+            --secondary: #34495e; 
+            --accent: #3498db;
+            --success: #27ae60; 
+            --danger: #e74c3c; 
+            --light: #f4f7f6;
+            --warning: #f39c12;
+            --purple: #8e44ad;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--light); margin: 0; padding: 20px; color: var(--primary); }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        .header-logo { border-bottom: 3px solid var(--accent); margin-bottom: 25px; padding-bottom: 15px; text-align: center; }
+        .logo-container { display: flex; justify-content: center; margin-bottom: 10px; }
+        .logo-cras { border-left: 8px solid var(--primary); padding-left: 15px; display: flex; flex-direction: column; align-items: flex-start; }
+        .sigla { font-size: 42px; font-weight: 900; color: var(--primary); line-height: 1; }
+        .nome-logo { font-size: 18px; color: var(--accent); text-transform: uppercase; letter-spacing: 3px; font-weight: bold; }
+        h1 { font-size: 1.6em; margin: 10px 0 5px; text-transform: uppercase; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .input-box { display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: var(--secondary); }
+        input, select { padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-size: 0.9em; transition: 0.3s; }
+
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 25px; justify-content: center; }
+        button { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        .btn-add { background: var(--success); color: white; width: 100%; font-size: 1.1em; padding: 15px; margin-bottom: 20px; }
+        .btn-pdf { background: #d32f2f; color: white; }
+        .btn-excel { background: #1d6f42; color: white; }
+        .btn-chart { background: var(--accent); color: white; }
+        .btn-backup { background: var(--warning); color: white; }
+        .btn-import { background: var(--purple); color: white; }
+        .btn-clear { background: #95a5a6; color: white; }
+        .btn-delete { background: none; color: var(--danger); border: none; cursor: pointer; font-size: 1.2em; }
+
+        .dashboard { display: none; margin-top: 20px; padding: 25px; border: 1px solid #dee2e6; border-radius: 10px; background: #fff; }
+        .chart-wrapper { max-width: 800px; margin: 0 auto 25px; height: 350px; }
+        .summary-box { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .card { padding: 15px; background: #f8f9fa; border-radius: 8px; text-align: center; border-bottom: 4px solid var(--accent); }
+        .card h4 { margin: 0; font-size: 0.75em; color: var(--secondary); text-transform: uppercase; }
+        .card p { margin: 8px 0 0; font-size: 1.5em; font-weight: bold; }
+
+        .table-container { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        th { background: var(--primary); color: white; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <header class="header-logo">
+        <div class="logo-container">
+            <div class="logo-cras">
+                <span class="sigla">CRAS</span>
+                <span class="nome-logo">Ana Rosa</span>
+            </div>
+        </div>
+        <h1>SISTEMA CENTRAL DE CADASTRO ÚNICO</h1>
+        <p style="color: #7f8c8d; font-size: 0.9em;">Gestão de Atendimentos e Produtividade Técnica</p>
+    </header>
+    
+    <form id="formCadUnico">
+        <div class="form-grid">
+            <div class="input-box">
+                <label>CPF DO RESPONSÁVEL</label>
+                <input type="text" id="cpf" maxlength="14" placeholder="000.000.000-00" required>
+            </div>
+            <div class="input-box">
+                <label>CÓDIGO FAMILIAR (Opcional)</label>
+                <input type="text" id="codFamilia" placeholder="Ex: 123456789">
+            </div>
+            <div class="input-box">
+                <label>NOME COMPLETO</label>
+                <input type="text" id="nome" required>
+            </div>
+            <div class="input-box">
+                <label>TIPO DE SERVIÇO</label>
+                <select id="servico" required>
+                    <option value="">Selecionar...</option>
+                    <option value="ALTERAÇÃO">ALTERAÇÃO CADASTRAL</option>
+                    <option value="ATUALIZAÇÃO">ATUALIZAÇÃO</option>
+                    <option value="CADASTRO INICIAL">CADASTRO INICIAL</option>
+                    <option value="CERTIDÃO DE BPC">CERTIDÃO</option>
+                    <option value="EXCLUSÃO">EXCLUSÃO DE MEMBRO</option>
+                    <option value="INCLUSÃO">INCLUSÃO DE MEMBRO</option>
+                    <option value="TRANSFERÊNCIA">TRANSFERÊNCIA</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-box" style="margin-bottom: 20px;">
+            <label>OBSERVAÇÃO</label>
+            <input type="text" id="observacao" placeholder="Informações adicionais...">
+        </div>
+
+        <button type="submit" class="btn-add">REGISTRAR ATENDIMENTO NO SISTEMA</button>
+    </form>
+
+    <div class="btn-group">
+        <button onclick="gerarRelatorioPDF()" class="btn-pdf">📄 Relatório Técnico</button>
+        <button onclick="gerarRelatorioGraficos()" class="btn-chart" style="background: #2980b9;">📈 Relatório Gráfico</button>
+        <button onclick="exportarExcel()" class="btn-excel">📊 Planilha Excel</button>
+        <button onclick="toggleDashboard()" class="btn-chart">👁️ Painel Visual</button>
+        <button onclick="salvarBackup()" class="btn-backup">💾 Backup</button>
+        <button onclick="document.getElementById('fileInput').click()" class="btn-import">📥 Importar</button>
+        <button onclick="limparBancoCompleto()" class="btn-clear">🗑️ Limpar Tudo</button>
+        <input type="file" id="fileInput" style="display:none" accept=".json" onchange="importarBackup(event)">
+    </div>
+
+    <div id="dashboard" class="dashboard">
+        <h2>Indicadores de Produtividade</h2>
+        <div class="chart-wrapper">
+            <canvas id="barChart"></canvas>
+        </div>
+        <div class="summary-box" id="summaryBox"></div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Cód. Família</th>
+                    <th>CPF</th>
+                    <th>Cidadão</th>
+                    <th>Serviço</th>
+                    <th>Observação</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const DB_NAME = 'cadunico_ana_rosa_v2';
+    let meuGrafico = null;
+
+    // Mascaramento CPF
+    document.getElementById('cpf').addEventListener('input', (e) => {
+        let v = e.target.value.replace(/\D/g, ""); 
+        v = v.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+        e.target.value = v;
+    });
+
+    function carregarDados() {
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const corpo = document.getElementById('corpoTabela');
+        corpo.innerHTML = '';
+        
+        dados.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach((item) => {
+            corpo.innerHTML += `<tr>
+                <td>${item.dataHora}</td>
+                <td>${item.codFamilia || '-'}</td>
+                <td>${item.cpf}</td>
+                <td>${item.nome}</td>
+                <td><strong>${item.servico}</strong></td>
+                <td>${item.observacao || '-'}</td>
+                <td><button class="btn-delete" onclick="excluirRegistro(${item.id})">🗑️</button></td>
+            </tr>`;
+        });
+        atualizarCards();
+        if(document.getElementById('dashboard').style.display === 'block') renderizarGrafico();
+    }
+
+    document.getElementById('formCadUnico').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const agora = new Date();
+        const registro = {
+            id: Date.now(),
+            timestamp: agora.toISOString(),
+            dataHora: agora.toLocaleString('pt-BR'),
+            codFamilia: document.getElementById('codFamilia').value,
+            cpf: document.getElementById('cpf').value,
+            nome: document.getElementById('nome').value.toUpperCase().trim(),
+            servico: document.getElementById('servico').value,
+            observacao: document.getElementById('observacao').value
+        };
+        const banco = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        banco.push(registro);
+        localStorage.setItem(DB_NAME, JSON.stringify(banco));
+        e.target.reset();
+        carregarDados();
+    });
+
+    function renderizarGrafico() {
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const categorias = ["CADASTRO INICIAL", "ATUALIZAÇÃO", "ALTERAÇÃO", "INCLUSÃO", "EXCLUSÃO", "CERTIDÃO DE BPC", "TRANSFERÊNCIA"];
+        const valores = categorias.map(c => dados.filter(d => d.servico === c).length);
+
+        if (meuGrafico) meuGrafico.destroy();
+        const ctx = document.getElementById('barChart').getContext('2d');
+        meuGrafico = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: categorias,
+                datasets: [{
+                    label: 'Qtd Atendimentos',
+                    data: valores,
+                    backgroundColor: ['#3498db', '#e67e22', '#27ae60', '#e74c3c', '#9b59b6', '#f1c40f'],
+                    borderRadius: 5
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                animation: false // Desativado para facilitar captura no PDF
+            }
+        });
+    }
+
+    // --- FUNÇÕES DE RELATÓRIO PDF ---
+
+    function gerarRelatorioPDF() {
+        const { jsPDF } = window.jspdf;
+        // Alterado para 'l' (landscape/paisagem) para caber a coluna de observação
+        const doc = new jsPDF('l', 'mm', 'a4'); 
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const dataEmissao = new Date().toLocaleString('pt-BR');
+
+        // Cabeçalho - Ajustado o centro para 148 (metade do A4 em paisagem)
+        doc.setFontSize(14);
+        doc.text("ESTADO DO PARANÁ", 148, 15, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text("SECRETARIA MUNICIPAL DE ASSISTÊNCIA SOCIAL", 148, 22, { align: 'center' });
+        doc.text("CRAS ANA ROSA - RELATÓRIO TÉCNICO DE ATENDIMENTOS", 148, 29, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.text(`Data de Emissão: ${dataEmissao}`, 14, 40);
+        doc.text(`Total de Registros: ${dados.length}`, 14, 45);
+
+        doc.autoTable({
+            startY: 50,
+            // 1. Adicionado 'Observação' no cabeçalho
+            head: [['Data/Hora', 'Cód. Família', 'CPF', 'Cidadão', 'Serviço', 'Observação']], 
+            // 2. Adicionado i.observacao no mapeamento dos dados
+            body: dados.map(i => [
+                i.dataHora, 
+                i.codFamilia || '-', 
+                i.cpf, 
+                i.nome, 
+                i.servico, 
+                i.observacao || '-'
+            ]),
+            headStyles: { fillColor: [44, 62, 80], fontSize: 9 },
+            styles: { fontSize: 8, cellPadding: 2 },
+            // Ajuste de largura para a observação não esmagar o resto
+            columnStyles: {
+                5: { cellWidth: 'auto' } // A coluna da observação ocupará o espaço restante
+            }
+        });
+
+        doc.save(`Relatorio_Tecnico_CRAS_${Date.now()}.pdf`);
+    }
+
+    async function gerarRelatorioGraficos() {
+        // Força renderização do gráfico antes de capturar
+        const db = document.getElementById('dashboard');
+        const displayOriginal = db.style.display;
+        db.style.display = 'block';
+        renderizarGrafico();
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const canvas = document.getElementById('barChart');
+        const imgData = canvas.toDataURL("image/png", 1.0);
+
+        doc.setFontSize(16);
+        doc.text("INDICADORES DE PRODUTIVIDADE - CRAS ANA ROSA", 105, 20, { align: 'center' });
+        
+        doc.setFontSize(12);
+        doc.text("Distribuição por Tipo de Serviço", 14, 40);
+        doc.addImage(imgData, 'PNG', 15, 45, 180, 90);
+
+        // Resumo estatístico no PDF
+        let yPos = 150;
+        doc.text("Resumo Quantitativo:", 14, yPos);
+        yPos += 10;
+        
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const categorias = ["CADASTRO INICIAL", "ATUALIZAÇÃO", "ALTERAÇÃO", "INCLUSÃO", "EXCLUSÃO", "CERTIDÃO", "TRANSFERÊNCIA"];
+        
+        doc.setFontSize(10);
+        categorias.forEach(cat => {
+            const qtd = dados.filter(d => d.servico === cat).length;
+            doc.text(`${cat}: ${qtd} atendimentos`, 20, yPos);
+            yPos += 7;
+        });
+
+        db.style.display = displayOriginal;
+        doc.save("Relatorio_Grafico_CRAS.pdf");
+    }
+
+    // Funções Auxiliares
+    function toggleDashboard() {
+        const db = document.getElementById('dashboard');
+        db.style.display = db.style.display === 'block' ? 'none' : 'block';
+        if(db.style.display === 'block') renderizarGrafico();
+    }
+
+    function atualizarCards() {
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const principais = ["CADASTRO INICIAL", "ATUALIZAÇÃO", "ALTERAÇÃO", "INCLUSÃO", "EXCLUSÃO", "CERTIDÃO", "TRANSFERÊNCIA"];
+        document.getElementById('summaryBox').innerHTML = principais.map(s => `
+            <div class="card">
+                <h4>${s}</h4>
+                <p>${dados.filter(d => d.servico === s).length}</p>
+            </div>
+        `).join('') + `<div class="card" style="border-bottom-color: var(--primary)"><h4>TOTAL</h4><p>${dados.length}</p></div>`;
+    }
+
+    function excluirRegistro(id) {
+        if(confirm("Excluir este registro?")) {
+            let banco = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+            banco = banco.filter(item => item.id !== id);
+            localStorage.setItem(DB_NAME, JSON.stringify(banco));
+            carregarDados();
+        }
+    }
+
+    function exportarExcel() {
+        const dados = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const ws = XLSX.utils.json_to_sheet(dados);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Atendimentos");
+        XLSX.writeFile(wb, "Relatorio_CadUnico.xlsx");
+    }
+
+    function salvarBackup() {
+        const dados = localStorage.getItem(DB_NAME);
+        const blob = new Blob([dados], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `Backup_CRAS_AnaRosa.json`;
+        a.click();
+    }
+
+    function importarBackup(event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            localStorage.setItem(DB_NAME, e.target.result);
+            carregarDados();
+            alert("Dados importados!");
+        };
+        reader.readAsText(file);
+    }
+
+    function limparBancoCompleto() {
+        if(confirm("Apagar TUDO?")) {
+            localStorage.removeItem(DB_NAME);
+            carregarDados();
+        }
+    }
+
+    window.onload = carregarDados;
+</script>
+
+</body>
+</html>
